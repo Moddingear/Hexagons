@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "RuntimeMeshComponent.h"
 #include "Structs.h"
-#include "RuntimeMeshManager.h"
+#include "RuntimeMeshProviderHexagons.h"
 #include "HexRenderingComponent.generated.h"
 
 /**
@@ -28,7 +28,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated)
 	TArray<FHexObstacle> ObstaclesToRender;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated)
-	FLinearColor ObstacleColor;
+	FColor ObstacleColor;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float Sides;
@@ -36,18 +36,16 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float CoreLength;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FLinearColor CoreColor;
+	FColor CoreColor;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float FloorLength;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float FloorDistance;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FLinearColor FloorColor;
-
-	FRuntimeMeshDataStruct<FHexVertex, int32> RenderMesh();
+	FColor FloorColor;
 
 	UFUNCTION(BlueprintCallable)
-	void DisplayMesh();
+	void UpdateMesh();
 	
 };

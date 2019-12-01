@@ -2,10 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "RuntimeMeshGenericVertex.h"
 #include "Structs.generated.h"
-
-DECLARE_RUNTIME_MESH_VERTEX(FHexVertex, true, false, false, true, 1, ERuntimeMeshVertexTangentBasisType::Default, ERuntimeMeshVertexUVType::Default)
 
 USTRUCT(BlueprintType)
 struct FHexObstacle
@@ -41,6 +38,12 @@ struct FHexObstacle
 	float GetDistance(UObject* WorldContextObject) const
 	{
 		float DeltaTime = UKismetSystemLibrary::GetGameTimeInSeconds(WorldContextObject) - TimeCreated;
+		return DeltaTime * Speed;
+	}
+
+	float GetDistance(float CurrentTime) const
+	{
+		float DeltaTime = CurrentTime - TimeCreated;
 		return DeltaTime * Speed;
 	}
 };
