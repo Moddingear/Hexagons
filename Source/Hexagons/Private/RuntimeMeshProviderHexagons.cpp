@@ -41,7 +41,7 @@ void FRuntimeMeshProviderHexagonsProxy::Initialize()
 	CreateSection(0, 0, Properties);
 }
 
-bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(uint8 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData)
+bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData)
 {
 	// We should only ever be queried for section 0 and lod 0
 	check(SectionId == 0 && LODIndex == 0);

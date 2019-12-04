@@ -9,6 +9,8 @@
 
 class HEXAGONS_API FRuntimeMeshProviderHexagonsProxy : public FRuntimeMeshProviderProxy
 {
+
+	UMaterialInterface* Material;
 	TArray<FHexObstacle> ObstaclesToRender;
 	FColor ObstacleColor;
 
@@ -21,7 +23,6 @@ class HEXAGONS_API FRuntimeMeshProviderHexagonsProxy : public FRuntimeMeshProvid
 	float FloorDistance;
 	FColor FloorColor;
 
-	UMaterialInterface* Material;
 
 	float RenderTime;
 
@@ -35,7 +36,7 @@ public:
 
 	virtual void Initialize() override;
 
-	virtual bool GetSectionMeshForLOD(uint8 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData) override;
+	virtual bool GetSectionMeshForLOD(int32 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData) override;
 
 	FRuntimeMeshCollisionSettings GetCollisionSettings() override;
 	bool HasCollisionMesh() override;
@@ -78,6 +79,6 @@ public:
 	UMaterialInterface* Material;
 
 
-	virtual IRuntimeMeshProviderProxyRef GetProxy() override { return MakeShared<FRuntimeMeshProviderHexagonsProxy, ESPMode::ThreadSafe>(TWeakObjectPtr<URuntimeMeshProvider>(this), Material,
+	virtual FRuntimeMeshProviderProxyRef GetProxy() override { return MakeShared<FRuntimeMeshProviderHexagonsProxy, ESPMode::ThreadSafe>(TWeakObjectPtr<URuntimeMeshProvider>(this), Material,
 		ObstaclesToRender, ObstacleColor, Sides, CoreLength, CoreColor, FloorLength, FloorDistance, FloorColor, UKismetSystemLibrary::GetGameTimeInSeconds(this)); }
 };
