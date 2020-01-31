@@ -9,30 +9,20 @@
 
 class HEXAGONS_API FRuntimeMeshProviderHexagonsProxy : public FRuntimeMeshProviderProxy
 {
-
-	UMaterialInterface* Material;
-	TArray<FHexObstacle> ObstaclesToRender;
-	FColor ObstacleColor;
-
-	float Sides;
-
-	float CoreLength;
-	FColor CoreColor;
-
-	float FloorLength;
-	float FloorDistance;
-	FColor FloorColor;
-
+	FHexRenderData RenderData;
 
 	float RenderTime;
 
 private:
 	int32 AddVertex(FRuntimeMeshRenderableMeshData& MeshData, FVector location, FColor color);
 
+	int32 AddVertexCollision(FRuntimeMeshCollisionData & CollisionData, FVector location);
+
 public:
-	FRuntimeMeshProviderHexagonsProxy(TWeakObjectPtr<URuntimeMeshProvider> InParent, UMaterialInterface* InMaterial, 
-		TArray<FHexObstacle> InObstaclesToRender, FColor InObstacleColor, float InSides, float InCoreLength, FColor InCoreColor, float InFloorLength, float InFloorDistance, FColor InFloorColor, float InRenderTime);
+	FRuntimeMeshProviderHexagonsProxy(TWeakObjectPtr<URuntimeMeshProvider> InParent);
 	~FRuntimeMeshProviderHexagonsProxy();
+
+	void UpdateProxyParameters(URuntimeMeshProvider* ParentProvider, bool bIsInitialSetup) override;
 
 	virtual void Initialize() override;
 
@@ -42,7 +32,7 @@ public:
 	bool HasCollisionMesh() override;
 	virtual bool GetCollisionMesh(FRuntimeMeshCollisionData& CollisionData) override;
 
-	virtual FBoxSphereBounds GetBounds() override { return FBoxSphereBounds(FSphere(FVector::ZeroVector, FloorLength)); }
+	virtual FBoxSphereBounds GetBounds() override { return FBoxSphereBounds(FSphere(FVector::ZeroVector, RenderData.FloorLength)); }
 
 	bool IsThreadSafe() const override;
 
@@ -56,29 +46,8 @@ class HEXAGONS_API URuntimeMeshProviderHexagons : public URuntimeMeshProvider
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FHexObstacle> ObstaclesToRender;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor ObstacleColor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Sides;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float CoreLength;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor CoreColor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float FloorLength;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float FloorDistance;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor FloorColor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UMaterialInterface* Material;
+		FHexRenderData RenderData;
 
 
-	virtual FRuntimeMeshProviderProxyRef GetProxy() override { return MakeShared<FRuntimeMeshProviderHexagonsProxy, ESPMode::ThreadSafe>(TWeakObjectPtr<URuntimeMeshProvider>(this), Material,
-		ObstaclesToRender, ObstacleColor, Sides, CoreLength, CoreColor, FloorLength, FloorDistance, FloorColor, UKismetSystemLibrary::GetGameTimeInSeconds(this)); }
+	virtual FRuntimeMeshProviderProxyRef GetProxy() override { return MakeShared<FRuntimeMeshProviderHexagonsProxy, ESPMode::ThreadSafe>(TWeakObjectPtr<URuntimeMeshProvider>(this)); }
 };

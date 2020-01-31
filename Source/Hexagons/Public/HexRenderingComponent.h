@@ -18,32 +18,19 @@ class HEXAGONS_API UHexRenderingComponent : public URuntimeMeshComponent
 
 public:
 
+	URuntimeMeshProviderHexagons* HexagonProvider;
+
 	UHexRenderingComponent(const FObjectInitializer& ObjectInitializer);
+
+	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	UMaterialInterface* MeshMaterial;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated)
-	TArray<FHexObstacle> ObstaclesToRender;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated)
-	FColor ObstacleColor;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
+		TArray<FHexObstacle> ObstaclesToRender;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float Sides;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float CoreLength;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FColor CoreColor;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float FloorLength;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float FloorDistance;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FColor FloorColor;
+		FHexRenderData RenderData;
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateMesh();

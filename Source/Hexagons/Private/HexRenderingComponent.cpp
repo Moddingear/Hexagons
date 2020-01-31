@@ -11,16 +11,27 @@ UHexRenderingComponent::UHexRenderingComponent(const FObjectInitializer& ObjectI
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("Material'/Game/MeshMaterial.MeshMaterial'"));
 	if (MaterialFinder.Succeeded())
 	{
-		MeshMaterial = MaterialFinder.Object;
+		RenderData.Material = MaterialFinder.Object;
 	}
 	bReplicates = true;
-	ObstacleColor = FColor(247, 243, 0);
-	Sides = 6.f;
-	CoreLength = 100.f;
-	CoreColor = FColor(247, 57, 0);
-	FloorLength = 10000.f;
-	FloorDistance = -10.f;
-	FloorColor = FColor(247, 0, 0);
+	RenderData.ObstacleColor = FColor(247, 243, 0);
+	RenderData.Sides = 6.f;
+	RenderData.CoreLength = 100.f;
+	RenderData.CoreColor = FColor(247, 57, 0);
+	RenderData.FloorLength = 10000.f;
+	RenderData.FloorDistance = -10.f;
+	RenderData.FloorColorEven = FColor(247, 0, 0);
+	RenderData.FloorColorOdd = FColor(186, 0, 0);
+}
+
+void UHexRenderingComponent::BeginPlay()
+{
+	HexagonProvider = NewObject<URuntimeMeshProviderHexagons>(this);
+	HexagonProvider->RenderData = RenderData;
+
+	GetOrCreateRuntimeMesh()->Initialize(HexagonProvider);
+	SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	SetCollisionProfileName("BlockAll");
 }
 
 void UHexRenderingComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -35,10 +46,10 @@ void UHexRenderingComponent::UpdateMesh()
 	for (int32 i = 0; i < ObstaclesToRender.Num(); i++)
 	{
 		FHexObstacle Obstacle = ObstaclesToRender[i];
-		float Distance = Obstacle.GetDistance(this);
+		float Distance = Obstacle.GetDistance(this) + RenderData.CoreLength;
 		//UE_LOG(LogTemp, Log, TEXT("Obstacle %i is at distance %f"), i, Distance);
 		float DistanceFar = Distance + Obstacle.Thickness;
-		if (DistanceFar < CoreLength) //If obstacle is inside the core, don't render
+		if (DistanceFar < RenderData.CoreLength) //If obstacle is inside the core, don't render
 		{
 			ObstaclesToDelete.Add(i);
 			continue;
@@ -50,19 +61,7 @@ void UHexRenderingComponent::UpdateMesh()
 		UE_LOG(LogTemp, Log, TEXT("Deleted obstacle %i"), ObstaclesToDelete.Last(i));
 		ObstaclesToRender.RemoveAt(ObstaclesToDelete.Last(i));
 	}
-
-	//Ideally the provider shouldn't be recreated every tick
-	URuntimeMeshProviderHexagons* Provider = NewObject<URuntimeMeshProviderHexagons>(this);
-	Provider->ObstaclesToRender = ObstaclesToRender;
-	Provider->ObstacleColor = ObstacleColor;
-	Provider->Sides = Sides;
-	Provider->CoreLength = CoreLength;
-	Provider->CoreColor = CoreColor;
-	Provider->FloorLength = FloorLength;
-	Provider->FloorDistance = FloorDistance;
-	Provider->FloorColor = FloorColor;
-
-	Provider->Material = MeshMaterial;
-
-	GetOrCreateRuntimeMesh()->Initialize(Provider);
+	RenderData.ObstaclesToRender = ObstaclesToRender;
+	HexagonProvider->RenderData = RenderData;
+	HexagonProvider->MarkProxyParametersDirty();
 }
