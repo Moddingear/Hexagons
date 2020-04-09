@@ -37,8 +37,11 @@ void FRuntimeMeshProviderHexagonsProxy::UpdateProxyParameters(URuntimeMeshProvid
 
 
 	RenderTime = UKismetSystemLibrary::GetGameTimeInSeconds(HexagonsProvider);
-	MarkSectionDirty(INDEX_NONE, INDEX_NONE);
-	MarkCollisionDirty();
+	if (!bIsInitialSetup)
+	{
+		MarkAllLODsDirty();
+		MarkCollisionDirty();
+	}
 	//UE_LOG(LogTemp, Log, TEXT("UpdateProxyParameters was called."))
 }
 
@@ -46,7 +49,9 @@ void FRuntimeMeshProviderHexagonsProxy::Initialize()
 {
 	FRuntimeMeshLODProperties LODProperties;
 	LODProperties.ScreenSize = 0.0f;
-	ConfigureLOD(0, LODProperties);
+	TArray<FRuntimeMeshLODProperties> LODs;
+	LODs.Add(LODProperties);
+	ConfigureLODs(LODs);
 
 	SetupMaterialSlot(0, FName("Material"), RenderData.Material);
 
