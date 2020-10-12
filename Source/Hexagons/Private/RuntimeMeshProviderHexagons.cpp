@@ -4,7 +4,21 @@
 #include "RuntimeMeshProviderHexagons.h"
 #include "..\Public\RuntimeMeshProviderHexagons.h"
 
-int32 FRuntimeMeshProviderHexagonsProxy::AddVertex(FRuntimeMeshRenderableMeshData & MeshData, FVector location, FColor color)
+void URuntimeMeshProviderHexagons::SetRenderData(FHexRenderData & InRenderData)
+{
+	FScopeLock Lock(&PropertySyncRoot);
+	RenderData = InRenderData;
+	MarkAllLODsDirty();
+	MarkCollisionDirty();
+}
+
+FHexRenderData URuntimeMeshProviderHexagons::GetRenderData()
+{
+	FScopeLock Lock(&PropertySyncRoot);
+	return RenderData;
+}
+
+int32 URuntimeMeshProviderHexagons::AddVertex(FRuntimeMeshRenderableMeshData & MeshData, FVector location, FColor color)
 {
 	int32 vertindex = MeshData.Positions.Add(location);
 	MeshData.Tangents.Add(FVector(0, 0, 1), FVector(1, 0, 0));
@@ -13,39 +27,13 @@ int32 FRuntimeMeshProviderHexagonsProxy::AddVertex(FRuntimeMeshRenderableMeshDat
 	return vertindex;
 }
 
-int32 FRuntimeMeshProviderHexagonsProxy::AddVertexCollision(FRuntimeMeshCollisionData & CollisionData, FVector location)
+int32 URuntimeMeshProviderHexagons::AddVertexCollision(FRuntimeMeshCollisionData & CollisionData, FVector location)
 {
 	int32 vertindex = CollisionData.Vertices.Add(location);
 	return vertindex;
 }
 
-FRuntimeMeshProviderHexagonsProxy::FRuntimeMeshProviderHexagonsProxy(TWeakObjectPtr<URuntimeMeshProvider> InParent)
-	:FRuntimeMeshProviderProxy(InParent)
-{
-
-}
-
-FRuntimeMeshProviderHexagonsProxy::~FRuntimeMeshProviderHexagonsProxy()
-{
-
-}
-
-void FRuntimeMeshProviderHexagonsProxy::UpdateProxyParameters(URuntimeMeshProvider * ParentProvider, bool bIsInitialSetup)
-{
-	URuntimeMeshProviderHexagons* HexagonsProvider = Cast<URuntimeMeshProviderHexagons>(ParentProvider);
-	RenderData = HexagonsProvider->RenderData;
-
-
-	RenderTime = UKismetSystemLibrary::GetGameTimeInSeconds(HexagonsProvider);
-	if (!bIsInitialSetup)
-	{
-		MarkAllLODsDirty();
-		MarkCollisionDirty();
-	}
-	//UE_LOG(LogTemp, Log, TEXT("UpdateProxyParameters was called."))
-}
-
-void FRuntimeMeshProviderHexagonsProxy::Initialize()
+void URuntimeMeshProviderHexagons::Initialize()
 {
 	FRuntimeMeshLODProperties LODProperties;
 	LODProperties.ScreenSize = 0.0f;
@@ -63,16 +51,28 @@ void FRuntimeMeshProviderHexagonsProxy::Initialize()
 	CreateSection(0, 0, Properties);
 }
 
-bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData)
+FBoxSphereBounds URuntimeMeshProviderHexagons::GetBounds()
 {
+
+	return FBoxSphereBounds(FSphere(FVector::ZeroVector, RenderData.FloorLength));
+}
+
+bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData)
+{
+	float RenderTime = UKismetSystemLibrary::GetGameTimeInSeconds(this);
+	FHexRenderData TempRenderData;
+	{
+		FScopeLock Lock(&PropertySyncRoot);
+		TempRenderData = RenderData;
+	}
 	// We should only ever be queried for section 0 and lod 0
 	check(SectionId == 0 && LODIndex == 0);
 
-	//First step, pre-build the directions of all of the sides
+	//First step, pre-build the directions of all of the sides (cos and sine are expensive, better not compute them too much)
 	TArray<FVector> Directions;
-	for (uint8 side = 0; side < FMath::CeilToInt(RenderData.Sides); side++)
+	for (uint8 side = 0; side < FMath::CeilToInt(TempRenderData.Sides); side++)
 	{
-		float angle = (side / RenderData.Sides) * 2 * PI;
+		float angle = (side / TempRenderData.Sides) * 2 * PI;
 		if (angle > 2 * PI)
 		{
 			angle = 2 * PI;
@@ -87,25 +87,25 @@ bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int
 	{
 		FVector left = Directions[i];
 		FVector right = Directions[(i + 1) % Directions.Num()];
-		FVector floor = FVector(0.f, 0.f, RenderData.FloorDistance);
+		FVector floor = FVector(0.f, 0.f, TempRenderData.FloorDistance);
 		TArray<FVector> Locations = TArray<FVector>({ left, right, FVector::ZeroVector }); //Triangles going clockwise are visible
 		for (uint8 j = 0; j < 3; j++) //Core triangle
 		{
-			int32 index = AddVertex(MeshData, Locations[j] * RenderData.CoreLength, RenderData.CoreColor);
+			int32 index = AddVertex(MeshData, Locations[j] * TempRenderData.CoreLength, TempRenderData.CoreColor);
 			MeshData.Triangles.Add(index);
 		}
 		for (uint8 j = 0; j < 3; j++) //Floor triangle
 		{
-			int32 index = AddVertex(MeshData, Locations[j] * RenderData.FloorLength + floor, (i&1)>0 ? RenderData.FloorColorOdd : RenderData.FloorColorEven);
+			int32 index = AddVertex(MeshData, Locations[j] * TempRenderData.FloorLength + floor, (i&1)>0 ? TempRenderData.FloorColorOdd : TempRenderData.FloorColorEven);
 			MeshData.Triangles.Add(index);
 		}
 	}
 
 	int32 numRendered = 0;
 	//Build obstacles
-	for (int32 i = 0; i < RenderData.ObstaclesToRender.Num(); i++)
+	for (int32 i = 0; i < TempRenderData.ObstaclesToRender.Num(); i++)
 	{
-		FHexObstacle Obstacle = RenderData.ObstaclesToRender[i];
+		FHexObstacle Obstacle = TempRenderData.ObstaclesToRender[i];
 
 		if (Obstacle.Side >= Directions.Num())
 		{
@@ -114,16 +114,16 @@ bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int
 		}
 		FVector left = Directions[Obstacle.Side];
 		FVector right = Directions[(Obstacle.Side + 1) % Directions.Num()];
-		float Distance = Obstacle.GetDistance(RenderTime) + RenderData.CoreLength;
+		float Distance = Obstacle.GetDistance(RenderTime) + TempRenderData.CoreLength;
 		//UE_LOG(LogTemp, Log, TEXT("Obstacle %i is at distance %f"), i, Distance);
 		float DistanceFar = Distance + Obstacle.Thickness;
-		if (DistanceFar < RenderData.CoreLength) //If obstacle is inside the core, don't render
+		if (DistanceFar < TempRenderData.CoreLength) //If obstacle is inside the core, don't render
 		{
 			continue;
 		}
-		if (Distance < RenderData.CoreLength) //Clamp obstacle to never clip inside of the core
+		if (Distance < TempRenderData.CoreLength) //Clamp obstacle to never clip inside of the core
 		{
-			Distance = RenderData.CoreLength;
+			Distance = TempRenderData.CoreLength;
 		}
 		FVector CloseLeft = left * Distance, CloseRight = right * Distance, FarLeft = left * DistanceFar, FarRight = right * DistanceFar;
 		TArray<FVector> Location = TArray<FVector>({ CloseLeft, CloseRight, FarLeft, FarRight });
@@ -131,7 +131,7 @@ bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int
 		int32 VertOffset = MeshData.Positions.Num();
 		for (uint8 j = 0; j < 4; j++)
 		{
-			AddVertex(MeshData, Location[j], RenderData.ObstacleColor);
+			AddVertex(MeshData, Location[j], TempRenderData.ObstacleColor);
 		}
 		for (int32 index : Triangles)
 		{
@@ -143,7 +143,7 @@ bool FRuntimeMeshProviderHexagonsProxy::GetSectionMeshForLOD(int32 LODIndex, int
 	return true;
 }
 
-FRuntimeMeshCollisionSettings FRuntimeMeshProviderHexagonsProxy::GetCollisionSettings()
+FRuntimeMeshCollisionSettings URuntimeMeshProviderHexagons::GetCollisionSettings()
 {
 	FRuntimeMeshCollisionSettings Settings;
 	Settings.bUseAsyncCooking = true;
@@ -152,13 +152,15 @@ FRuntimeMeshCollisionSettings FRuntimeMeshProviderHexagonsProxy::GetCollisionSet
 	return Settings;
 }
 
-bool FRuntimeMeshProviderHexagonsProxy::HasCollisionMesh()
+bool URuntimeMeshProviderHexagons::HasCollisionMesh()
 {
 	return true;
 }
 
-bool FRuntimeMeshProviderHexagonsProxy::GetCollisionMesh(FRuntimeMeshCollisionData& CollisionData)
+bool URuntimeMeshProviderHexagons::GetCollisionMesh(FRuntimeMeshCollisionData& CollisionData)
 {
+	float RenderTime = UKismetSystemLibrary::GetGameTimeInSeconds(this);
+
 	//First step, pre-build the directions of all of the sides
 	TArray<FVector> Directions;
 	for (uint8 side = 0; side < FMath::CeilToInt(RenderData.Sides); side++)
@@ -211,7 +213,7 @@ bool FRuntimeMeshProviderHexagonsProxy::GetCollisionMesh(FRuntimeMeshCollisionDa
 	return true;
 }
 
-bool FRuntimeMeshProviderHexagonsProxy::IsThreadSafe() const
+bool URuntimeMeshProviderHexagons::IsThreadSafe()
 {
 	return true;
 }

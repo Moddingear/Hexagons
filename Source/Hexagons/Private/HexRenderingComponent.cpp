@@ -6,14 +6,13 @@
 #include "UObject/ConstructorHelpers.h"
 
 UHexRenderingComponent::UHexRenderingComponent(const FObjectInitializer& ObjectInitializer)
-	:Super(ObjectInitializer)
 {
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("Material'/Game/MeshMaterial.MeshMaterial'"));
 	if (MaterialFinder.Succeeded())
 	{
 		RenderData.Material = MaterialFinder.Object;
 	}
-	bReplicates = true;
+	SetIsReplicated(true);
 	RenderData.ObstacleColor = FColor(247, 243, 0);
 	RenderData.Sides = 6.f;
 	RenderData.CoreLength = 100.f;
@@ -27,7 +26,7 @@ UHexRenderingComponent::UHexRenderingComponent(const FObjectInitializer& ObjectI
 void UHexRenderingComponent::BeginPlay()
 {
 	HexagonProvider = NewObject<URuntimeMeshProviderHexagons>(this);
-	HexagonProvider->RenderData = RenderData;
+	HexagonProvider->SetRenderData(RenderData);
 
 	GetOrCreateRuntimeMesh()->Initialize(HexagonProvider);
 	SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -62,6 +61,5 @@ void UHexRenderingComponent::UpdateMesh()
 		ObstaclesToRender.RemoveAt(ObstaclesToDelete.Last(i));
 	}
 	RenderData.ObstaclesToRender = ObstaclesToRender;
-	HexagonProvider->RenderData = RenderData;
-	HexagonProvider->MarkProxyParametersDirty();
+	HexagonProvider->SetRenderData(RenderData);
 }
