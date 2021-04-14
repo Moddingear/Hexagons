@@ -10,7 +10,7 @@ struct FHexObstacle
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite) //Use the time and speed to get the position of the obstacle
-	float TimeCreated;
+	FDateTime TimeCreated;
 
 	UPROPERTY(BlueprintReadWrite)
 	float Distance;
@@ -33,7 +33,7 @@ struct FHexObstacle
 	{}
 
 	FHexObstacle(FDateTime TimeCreatedIn, float DistanceIn, float SpeedIn, float ThicknessIn, uint8 SideIn)
-		:TimeCreated(TimeCreated),
+		:TimeCreated(TimeCreatedIn),
 		Distance(DistanceIn),
 		Speed(SpeedIn),
 		Thickness(ThicknessIn),
@@ -42,19 +42,19 @@ struct FHexObstacle
 
 	float GetDistance(UObject* WorldContextObject) const
 	{
-		float DeltaTime = UKismetSystemLibrary::GetGameTimeInSeconds(WorldContextObject) - TimeCreated;
-		return Distance - DeltaTime * Speed;
+		FTimespan DeltaTime = FDateTime::UtcNow() - TimeCreated;
+		return Distance - DeltaTime.GetTotalSeconds() * Speed;
 	}
 
-	float GetDistance(float CurrentTime) const
+	float GetDistance(FDateTime CurrentTime) const
 	{
-		float DeltaTime = CurrentTime - TimeCreated;
-		return Distance - DeltaTime * Speed;
+		FTimespan DeltaTime = CurrentTime - TimeCreated;
+		return Distance - DeltaTime.GetTotalSeconds() * Speed;
 	}
 
 	FString ToString() const
 	{
-		return FString::Printf(TEXT("{TimeCreated : {%f}, Distance : {%f}, Speed : {%f}, Thickness : {%f}, Side : {%i}}"), TimeCreated, Distance, Speed, Thickness, Side);
+		return FString::Printf(TEXT("{TimeCreated : {%s}, Distance : {%f}, Speed : {%f}, Thickness : {%f}, Side : {%i}}"), *TimeCreated.ToString(), Distance, Speed, Thickness, Side);
 	}
 };
 
@@ -67,6 +67,10 @@ struct FHexRenderData
 		TArray<FHexObstacle> ObstaclesToRender;
 	UPROPERTY(BlueprintReadWrite)
 		FColor ObstacleColor;
+	UPROPERTY(BlueprintReadWrite)
+		FColor ObstacleEdgeColor;
+	UPROPERTY(BlueprintReadWrite)
+		float EdgeProportion;
 
 	UPROPERTY(BlueprintReadWrite)
 		float Sides;

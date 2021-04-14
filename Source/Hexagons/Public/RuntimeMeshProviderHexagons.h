@@ -1,4 +1,4 @@
-// Copyright 2016-2019 Chris Conway (Koderz). All Rights Reserved.
+// Copyright 2019-2021 Gabriel Zerbib (Moddingear). All Rights Reserved.
 
 #pragma once
 

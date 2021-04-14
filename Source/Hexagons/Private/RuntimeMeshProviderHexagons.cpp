@@ -1,4 +1,4 @@
-// Copyright 2016-2019 Chris Conway (Koderz). All Rights Reserved.
+// Copyright 2019-2021 Gabriel Zerbib (Moddingear). All Rights Reserved.
 
 
 #include "RuntimeMeshProviderHexagons.h"
@@ -59,7 +59,8 @@ FBoxSphereBounds URuntimeMeshProviderHexagons::GetBounds()
 
 bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 SectionId, FRuntimeMeshRenderableMeshData& MeshData)
 {
-	float RenderTime = UKismetSystemLibrary::GetGameTimeInSeconds(this);
+	QUICK_SCOPE_CYCLE_COUNTER( STAT_ProviderHexagon_GetSectionMesh );
+	FDateTime RenderTime = FDateTime::UtcNow();
 	FHexRenderData TempRenderData;
 	{
 		FScopeLock Lock(&PropertySyncRoot);
@@ -68,9 +69,17 @@ bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 Se
 	// We should only ever be queried for section 0 and lod 0
 	check(SectionId == 0 && LODIndex == 0);
 
+	//pre-allocate vertices and triangles so it doesn't need to shuffle data around (slightly faster)
+	uint8 NumSides = FMath::CeilToInt(TempRenderData.Sides);
+	int32 NumObstacles = TempRenderData.ObstaclesToRender.Num();
+	int32 NumVertices = 2*3*static_cast<int32>(NumSides) + 8 * NumObstacles;
+	int32 NumTriangles = 2*static_cast<int32>(NumSides) + 4 * NumObstacles;
+	MeshData.ReserveVertices(NumVertices);
+	MeshData.Triangles.Reserve(NumTriangles *3);
+	
 	//First step, pre-build the directions of all of the sides (cos and sine are expensive, better not compute them too much)
 	TArray<FVector> Directions;
-	for (uint8 side = 0; side < FMath::CeilToInt(TempRenderData.Sides); side++)
+	for (uint8 side = 0; side < NumSides; side++)
 	{
 		float angle = (side / TempRenderData.Sides) * 2 * PI;
 		if (angle > 2 * PI)
@@ -83,7 +92,7 @@ bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 Se
 	}
 
 	//Build core and floor
-	for (uint8 i = 0; i < Directions.Num(); i++)
+	for (uint8 i = 0; i < NumSides; i++)
 	{
 		FVector left = Directions[i];
 		FVector right = Directions[(i + 1) % Directions.Num()];
@@ -103,7 +112,7 @@ bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 Se
 
 	int32 numRendered = 0;
 	//Build obstacles
-	for (int32 i = 0; i < TempRenderData.ObstaclesToRender.Num(); i++)
+	for (int32 i = 0; i < NumObstacles; i++)
 	{
 		FHexObstacle Obstacle = TempRenderData.ObstaclesToRender[i];
 
@@ -117,21 +126,27 @@ bool URuntimeMeshProviderHexagons::GetSectionMeshForLOD(int32 LODIndex, int32 Se
 		float Distance = Obstacle.GetDistance(RenderTime) + TempRenderData.CoreLength;
 		//UE_LOG(LogTemp, Log, TEXT("Obstacle %i is at distance %f"), i, Distance);
 		float DistanceFar = Distance + Obstacle.Thickness;
+
+		float EdgeDistance = FMath::Lerp(DistanceFar, Distance, TempRenderData.EdgeProportion);
+		
 		if (DistanceFar < TempRenderData.CoreLength) //If obstacle is inside the core, don't render
 		{
 			continue;
 		}
-		if (Distance < TempRenderData.CoreLength) //Clamp obstacle to never clip inside of the core
-		{
-			Distance = TempRenderData.CoreLength;
-		}
+		Distance = FMath::Max(TempRenderData.CoreLength, Distance); //Clamp the close side distance so it doesn't clip the core
+		EdgeDistance = FMath::Max(TempRenderData.CoreLength, EdgeDistance);
+		
 		FVector CloseLeft = left * Distance, CloseRight = right * Distance, FarLeft = left * DistanceFar, FarRight = right * DistanceFar;
-		TArray<FVector> Location = TArray<FVector>({ CloseLeft, CloseRight, FarLeft, FarRight });
-		TArray<int32> Triangles = TArray<int32>({ 0,2,1, 1,2,3 });
+
+		FVector EdgeLeft = left * EdgeDistance, EdgeRight = right * EdgeDistance;
+
+		//The edge vertices need to be doubled so that one set can have the wall color and the other set can have the edge color
+		TArray<FVector> Location = TArray<FVector>({ CloseLeft, CloseRight, EdgeLeft, EdgeRight, EdgeLeft, EdgeRight, FarLeft, FarRight });
+		TArray<int32> Triangles = TArray<int32>({ 0,2,1, 1,2,3, 4,6,5, 5,6,7 });
 		int32 VertOffset = MeshData.Positions.Num();
-		for (uint8 j = 0; j < 4; j++)
+		for (uint8 j = 0; j < Location.Num(); j++)
 		{
-			AddVertex(MeshData, Location[j], TempRenderData.ObstacleColor);
+			AddVertex(MeshData, Location[j], j >= 4 ? TempRenderData.ObstacleEdgeColor : TempRenderData.ObstacleColor);
 		}
 		for (int32 index : Triangles)
 		{
