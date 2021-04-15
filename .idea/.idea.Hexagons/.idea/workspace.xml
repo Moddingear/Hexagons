@@ -6,15 +6,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="67fa68b6-670d-4ce3-90e3-d9130d74ab3c" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/Config/DefaultEngine.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEngine.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/HexPlayer.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/HexPlayer.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Hexagon.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Hexagon.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/World.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/World.umap" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Hexagons/Private/HexRenderingComponent.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Hexagons/Private/HexRenderingComponent.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Hexagons/Private/RuntimeMeshProviderHexagons.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Hexagons/Private/RuntimeMeshProviderHexagons.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Hexagons/Public/HexRenderingComponent.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Hexagons/Public/HexRenderingComponent.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Hexagons/Public/RuntimeMeshProviderHexagons.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Hexagons/Public/RuntimeMeshProviderHexagons.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Hexagons/Public/Structs.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Hexagons/Public/Structs.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Hexagons/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Hexagons/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,7 +14,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/Plugins/RuntimeMeshComponent" />
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/../../Epic Games/UE_4.23/Engine/Source/Runtime/Engine/Classes/Kismet/KismetSystemLibrary.h" root0="FORCE_HIGHLIGHTING" />
@@ -67,6 +59,7 @@
       <workItem from="1618332325249" duration="2679000" />
       <workItem from="1618409581741" duration="4190000" />
       <workItem from="1618414654095" duration="1987000" />
+      <workItem from="1618417375959" duration="1005000" />
     </task>
     <servers />
   </component>
